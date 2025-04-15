@@ -10,7 +10,8 @@ import {
     getTodoSummary,
     getTodoStatusHistory,
     getTodoTags,
-    getRecurringSeries
+    getRecurringSeries,
+    getAllTodos
 } from '../controllers/todoController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -18,6 +19,9 @@ const router = express.Router();
 
 // All routes are protected with auth middleware
 router.use(protect);
+
+// Route for getting all todos (simplified, for dependency selection)
+router.get('/all', getAllTodos);
 
 router.route('/')
     .post(createTodo)
@@ -43,5 +47,6 @@ router.route('/:id/history')
 
 // Route for recurring task series
 router.route('/series/:recurringId').get(protect, getRecurringSeries);
+router.get('/series/:recurringId', protect, getRecurringSeries);
 
 export default router;

@@ -173,6 +173,21 @@ const getTodos = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Get all todos for the current user (simplified, for dependency selection)
+// @route   GET /api/todos/all
+// @access  Private
+const getAllTodos = asyncHandler(async (req, res) => {
+    const todos = await Todo.find({
+        user: req.user._id,
+        // Don't include completed tasks in dependencies to avoid circular dependencies
+        status: { $ne: 'completed' }
+    })
+        .select('_id title status')
+        .sort({ createdAt: -1 });
+
+    res.json(todos);
+});
+
 // @desc    Get todo by ID
 // @route   GET /api/todos/:id
 // @access  Private
@@ -481,5 +496,6 @@ export {
     getTodoSummary,
     getTodoStatusHistory,
     getTodoTags,
-    getRecurringSeries
+    getRecurringSeries,
+    getAllTodos
 };

@@ -100,11 +100,10 @@ const todoSchema = mongoose.Schema(
             type: Date,
             default: null
         },
-        recurringParentId: {
+        dependencies: [{
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Todo',
-            default: null
-        },
+            ref: 'Todo'
+        }],
         subtasks: [subtaskSchema],
         parentTodo: {
             type: mongoose.Schema.Types.ObjectId,
