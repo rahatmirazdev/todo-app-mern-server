@@ -1,5 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import Todo from '../models/todoModel.js';
+import { generateNextRecurringTask } from '../utils/recurringTaskUtils.js';
 
 // @desc    Create a new todo
 // @route   POST /api/todos
@@ -253,12 +254,12 @@ const deleteTodo = asyncHandler(async (req, res) => {
 // @route   PATCH /api/todos/:id/status
 // @access  Private
 const updateTodoStatus = asyncHandler(async (req, res) => {
+    const { id } = req.params;
     const { status, comment } = req.body;
 
-    const todo = await Todo.findById(req.params.id);
+    const todo = await Todo.findById(id);
 
     if (todo && todo.user.toString() === req.user._id.toString()) {
-        // Only add to history if status actually changes
         if (status !== todo.status) {
             // Add status change to history
             todo.statusHistory.push({
@@ -272,15 +273,33 @@ const updateTodoStatus = asyncHandler(async (req, res) => {
             todo.status = status;
 
             // Set completedAt timestamp when completing a todo
+            let newRecurringTask = null;
+            
             if (status === 'completed' && todo.completedAt === null) {
                 todo.completedAt = new Date();
+                
+                // If this is a recurring task and it's being completed, generate the next instance
+                if (todo.isRecurring) {
+                    newRecurringTask = await generateNextRecurringTask(todo);
+                }
             } else if (status !== 'completed') {
                 todo.completedAt = null;
             }
-        }
 
-        const updatedTodo = await todo.save();
-        res.json(updatedTodo);
+            const updatedTodo = await todo.save();
+            
+            // If a new recurring task was created, include it in the response
+            if (newRecurringTask) {
+                res.json({
+                    updatedTodo,
+                    newRecurringTask
+                });
+            } else {
+                res.json(updatedTodo);
+            }
+        } else {
+            res.json(todo); // No change needed
+        }
     } else {
         res.status(404);
         throw new Error('Todo not found');
@@ -292,9 +311,13 @@ const updateTodoStatus = asyncHandler(async (req, res) => {
 // @access  Private
 const getTodoStats = asyncHandler(async (req, res) => {
     const userId = req.user._id;
-
-    // Query for total count
-    const totalCount = await Todo.countDocuments({ user: userId });
+    
+    // Initialize the stats object
+    const stats = {
+        total: 0,
+        active: 0,
+        completed: 0
+    };
 
     // Query for status counts
     const statusCounts = await Todo.aggregate([
@@ -302,14 +325,10 @@ const getTodoStats = asyncHandler(async (req, res) => {
         { $group: { _id: '$status', count: { $sum: 1 } } }
     ]);
 
-    // Convert the aggregation result to a more usable format
-    const stats = {
-        total: totalCount,
-        active: 0,
-        completed: 0
-    };
-
+    // Process the status counts
     statusCounts.forEach(status => {
+        stats.total += status.count;
+        
         if (status._id === 'completed') {
             stats.completed = status.count;
         } else {
@@ -402,7 +421,6 @@ const getTodoSummary = asyncHandler(async (req, res) => {
 // @access  Private
 const getTodoStatusHistory = asyncHandler(async (req, res) => {
     const todo = await Todo.findById(req.params.id);
-
     if (todo && todo.user.toString() === req.user._id.toString()) {
         res.json(todo.statusHistory);
     } else {
@@ -426,6 +444,32 @@ const getTodoTags = asyncHandler(async (req, res) => {
     res.json({ tags: tags.map(item => item.tag) });
 });
 
+// @desc    Get all todos in a recurring series
+// @route   GET /api/todos/series/:recurringId
+// @access  Private
+const getRecurringSeries = asyncHandler(async (req, res) => {
+    const { recurringId } = req.params;
+
+    // Find the original recurring todo
+    const originalTodo = await Todo.findById(recurringId);
+
+    if (!originalTodo || originalTodo.user.toString() !== req.user._id.toString()) {
+        res.status(404);
+        throw new Error('Todo not found');
+    }
+
+    // Find all todos in the series (original or derived from it)
+    const seriesTodos = await Todo.find({
+        $or: [
+            { _id: recurringId },
+            { recurringParentId: recurringId }
+        ],
+        user: req.user._id
+    }).sort({ createdAt: 1 });
+
+    res.json(seriesTodos);
+});
+
 export {
     createTodo,
     getTodos,
@@ -436,5 +480,6 @@ export {
     getTodoStats,
     getTodoSummary,
     getTodoStatusHistory,
-    getTodoTags
+    getTodoTags,
+    getRecurringSeries
 };

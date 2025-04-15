@@ -93,11 +93,16 @@ const todoSchema = mongoose.Schema(
         },
         recurringPattern: {
             type: String,
-            enum: ['daily', 'weekly', 'monthly', 'custom'],
-            default: null
+            enum: ['daily', 'weekly', 'monthly'],
+            default: 'daily'
         },
         recurringEndDate: {
             type: Date,
+            default: null
+        },
+        recurringParentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Todo',
             default: null
         },
         subtasks: [subtaskSchema],
