@@ -207,18 +207,30 @@ const deleteTodo = asyncHandler(async (req, res) => {
 // @route   PATCH /api/todos/:id/status
 // @access  Private
 const updateTodoStatus = asyncHandler(async (req, res) => {
-    const { status } = req.body;
+    const { status, comment } = req.body;
 
     const todo = await Todo.findById(req.params.id);
 
     if (todo && todo.user.toString() === req.user._id.toString()) {
-        todo.status = status;
+        // Only add to history if status actually changes
+        if (status !== todo.status) {
+            // Add status change to history
+            todo.statusHistory.push({
+                fromStatus: todo.status,
+                toStatus: status,
+                changedAt: new Date(),
+                comment: comment || ''
+            });
 
-        // Set completedAt timestamp when completing a todo
-        if (status === 'completed' && todo.completedAt === null) {
-            todo.completedAt = new Date();
-        } else if (status !== 'completed') {
-            todo.completedAt = null;
+            // Update the status
+            todo.status = status;
+
+            // Set completedAt timestamp when completing a todo
+            if (status === 'completed' && todo.completedAt === null) {
+                todo.completedAt = new Date();
+            } else if (status !== 'completed') {
+                todo.completedAt = null;
+            }
         }
 
         const updatedTodo = await todo.save();
@@ -339,6 +351,20 @@ const getTodoSummary = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Get status history for a todo
+// @route   GET /api/todos/:id/history
+// @access  Private
+const getTodoStatusHistory = asyncHandler(async (req, res) => {
+    const todo = await Todo.findById(req.params.id);
+
+    if (todo && todo.user.toString() === req.user._id.toString()) {
+        res.json(todo.statusHistory);
+    } else {
+        res.status(404);
+        throw new Error('Todo not found');
+    }
+});
+
 export {
     createTodo,
     getTodos,
@@ -347,5 +373,6 @@ export {
     deleteTodo,
     updateTodoStatus,
     getTodoStats,
-    getTodoSummary
+    getTodoSummary,
+    getTodoStatusHistory
 };

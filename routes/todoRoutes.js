@@ -7,7 +7,8 @@ import {
     deleteTodo,
     updateTodoStatus,
     getTodoStats,
-    getTodoSummary
+    getTodoSummary,
+    getTodoStatusHistory
 } from '../controllers/todoController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -30,5 +31,8 @@ router.route('/:id')
 
 router.route('/:id/status')
     .patch(updateTodoStatus);
+
+router.route('/:id/history')
+    .get(getTodoStatusHistory);
 
 export default router;

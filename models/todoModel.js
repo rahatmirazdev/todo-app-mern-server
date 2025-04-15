@@ -19,6 +19,30 @@ const subtaskSchema = mongoose.Schema(
     { timestamps: true }
 );
 
+const statusHistorySchema = mongoose.Schema(
+    {
+        fromStatus: {
+            type: String,
+            enum: ['todo', 'in_progress', 'completed'],
+            required: true
+        },
+        toStatus: {
+            type: String,
+            enum: ['todo', 'in_progress', 'completed'],
+            required: true
+        },
+        changedAt: {
+            type: Date,
+            default: Date.now
+        },
+        comment: {
+            type: String,
+            default: ''
+        }
+    },
+    { _id: false }
+);
+
 const todoSchema = mongoose.Schema(
     {
         user: {
@@ -81,7 +105,8 @@ const todoSchema = mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Todo',
             default: null
-        }
+        },
+        statusHistory: [statusHistorySchema]
     },
     {
         timestamps: true
