@@ -125,9 +125,14 @@ const getTodos = asyncHandler(async (req, res) => {
 
     // Search functionality
     if (search) {
+        const searchRegex = { $regex: search, $options: 'i' };
         query.$or = [
-            { title: { $regex: search, $options: 'i' } },
-            { description: { $regex: search, $options: 'i' } }
+            { title: searchRegex },
+            { description: searchRegex },
+            { category: searchRegex },
+            { tags: searchRegex },
+            // Also search in subtasks titles
+            { 'subtasks.title': searchRegex }
         ];
     }
 
