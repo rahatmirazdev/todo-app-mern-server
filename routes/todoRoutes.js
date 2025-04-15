@@ -1,12 +1,13 @@
 import express from 'express';
-import {
-    createTodo,
-    getTodos,
-    getTodoById,
-    updateTodo,
-    deleteTodo,
+import { 
+    createTodo, 
+    getTodos, 
+    getTodoById, 
+    updateTodo, 
+    deleteTodo, 
     updateTodoStatus,
-    getTodoStats
+    getTodoStats,
+    getTodoSummary
 } from '../controllers/todoController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -20,6 +21,7 @@ router.route('/')
     .get(getTodos);
 
 router.get('/stats', getTodoStats);
+router.get('/summary', getTodoSummary);
 
 router.route('/:id')
     .get(getTodoById)

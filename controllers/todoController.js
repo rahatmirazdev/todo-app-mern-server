@@ -46,7 +46,18 @@ const createTodo = asyncHandler(async (req, res) => {
 // @route   GET /api/todos
 // @access  Private
 const getTodos = asyncHandler(async (req, res) => {
-    const { status, priority, category, search, sortBy, order, page = 1, limit = 10 } = req.query;
+    const { 
+        status, 
+        priority, 
+        category, 
+        search, 
+        sortBy, 
+        order, 
+        page = 1, 
+        limit = 10,
+        dueDateFrom,
+        dueDateTo
+    } = req.query;
 
     // Build query
     const query = { user: req.user._id };
@@ -55,6 +66,26 @@ const getTodos = asyncHandler(async (req, res) => {
     if (status) query.status = status;
     if (priority) query.priority = priority;
     if (category) query.category = category;
+
+    // Due date filtering
+    if (dueDateFrom === 'none') {
+        // No due date set
+        query.dueDate = null;
+    } else if (dueDateFrom || dueDateTo) {
+        query.dueDate = {};
+
+        if (dueDateFrom) {
+            const fromDate = new Date(dueDateFrom);
+            fromDate.setHours(0, 0, 0, 0);
+            query.dueDate.$gte = fromDate;
+        }
+
+        if (dueDateTo) {
+            const toDate = new Date(dueDateTo);
+            toDate.setHours(23, 59, 59, 999);
+            query.dueDate.$lte = toDate;
+        }
+    }
 
     // Search functionality
     if (search) {
@@ -232,6 +263,82 @@ const getTodoStats = asyncHandler(async (req, res) => {
     res.json(stats);
 });
 
+// @desc    Get todo summary by priority and due date
+// @route   GET /api/todos/summary
+// @access  Private
+const getTodoSummary = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    // Get priority counts
+    const priorityCounts = await Todo.aggregate([
+        { $match: { user: userId, status: { $ne: 'completed' } } },
+        { $group: { _id: '$priority', count: { $sum: 1 } } }
+    ]);
+    
+    // Get due date counts
+    const overdueTasks = await Todo.countDocuments({
+        user: userId,
+        dueDate: { $lt: today },
+        status: { $ne: 'completed' }
+    });
+    
+    const todayTasks = await Todo.countDocuments({
+        user: userId,
+        dueDate: { $gte: today, $lt: tomorrow },
+        status: { $ne: 'completed' }
+    });
+    
+    const upcomingTasks = await Todo.countDocuments({
+        user: userId,
+        dueDate: { $gte: tomorrow, $lt: nextWeek },
+        status: { $ne: 'completed' }
+    });
+    
+    const laterTasks = await Todo.countDocuments({
+        user: userId,
+        dueDate: { $gte: nextWeek },
+        status: { $ne: 'completed' }
+    });
+    
+    const noDueDateTasks = await Todo.countDocuments({
+        user: userId,
+        dueDate: null,
+        status: { $ne: 'completed' }
+    });
+    
+    // Format priority counts into object
+    const priorityData = {
+        high: 0,
+        medium: 0,
+        low: 0
+    };
+    
+    priorityCounts.forEach(item => {
+        if (item._id && priorityData.hasOwnProperty(item._id)) {
+            priorityData[item._id] = item.count;
+        }
+    });
+    
+    res.json({
+        priority: priorityData,
+        dueDate: {
+            overdue: overdueTasks,
+            today: todayTasks,
+            upcoming: upcomingTasks,
+            later: laterTasks,
+            noDueDate: noDueDateTasks
+        }
+    });
+});
+
 export {
     createTodo,
     getTodos,
@@ -239,5 +346,6 @@ export {
     updateTodo,
     deleteTodo,
     updateTodoStatus,
-    getTodoStats
+    getTodoStats,
+    getTodoSummary
 };
