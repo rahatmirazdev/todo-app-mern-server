@@ -8,7 +8,8 @@ import {
     updateTodoStatus,
     getTodoStats,
     getTodoSummary,
-    getTodoStatusHistory
+    getTodoStatusHistory,
+    getTodoTags
 } from '../controllers/todoController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -23,6 +24,10 @@ router.route('/')
 
 router.get('/stats', getTodoStats);
 router.get('/summary', getTodoSummary);
+
+// Add the new route for tags
+router.route('/tags')
+    .get(protect, getTodoTags);
 
 router.route('/:id')
     .get(getTodoById)

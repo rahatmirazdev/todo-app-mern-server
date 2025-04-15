@@ -56,7 +56,12 @@ const getTodos = asyncHandler(async (req, res) => {
         page = 1,
         limit = 10,
         dueDateFrom,
-        dueDateTo
+        dueDateTo,
+        tags,
+        hasSubtasks,
+        completedSubtasks,
+        secondarySortBy,
+        secondaryOrder
     } = req.query;
 
     // Build query
@@ -66,6 +71,37 @@ const getTodos = asyncHandler(async (req, res) => {
     if (status) query.status = status;
     if (priority) query.priority = priority;
     if (category) query.category = category;
+
+    // Tag filtering
+    if (tags) {
+        // Handle both single tag and array of tags
+        if (Array.isArray(tags)) {
+            query.tags = { $in: tags };
+        } else {
+            query.tags = tags;
+        }
+    }
+
+    // Subtask filtering
+    if (hasSubtasks === 'true') {
+        query['subtasks.0'] = { $exists: true };
+    } else if (hasSubtasks === 'false') {
+        query.subtasks = { $size: 0 };
+    }
+
+    // Subtask completion filtering (only applicable if hasSubtasks is true)
+    if (hasSubtasks === 'true' && completedSubtasks) {
+        if (completedSubtasks === 'all') {
+            query.$expr = { $eq: [{ $size: "$subtasks" }, { $size: { $filter: { input: "$subtasks", as: "subtask", cond: { $eq: ["$$subtask.completed", true] } } } }] };
+        } else if (completedSubtasks === 'none') {
+            query.$expr = { $eq: [{ $size: { $filter: { input: "$subtasks", as: "subtask", cond: { $eq: ["$$subtask.completed", true] } } } }, 0] };
+        } else if (completedSubtasks === 'some') {
+            query.$and = [
+                { $expr: { $gt: [{ $size: { $filter: { input: "$subtasks", as: "subtask", cond: { $eq: ["$$subtask.completed", true] } } } }, 0] } },
+                { $expr: { $lt: [{ $size: { $filter: { input: "$subtasks", as: "subtask", cond: { $eq: ["$$subtask.completed", true] } } } }, { $size: "$subtasks" }] } }
+            ];
+        }
+    }
 
     // Due date filtering
     if (dueDateFrom === 'none') {
@@ -102,6 +138,11 @@ const getTodos = asyncHandler(async (req, res) => {
     const sortOptions = {};
     if (sortBy) {
         sortOptions[sortBy] = order === 'desc' ? -1 : 1;
+
+        // Secondary sorting
+        if (secondarySortBy) {
+            sortOptions[secondarySortBy] = secondaryOrder === 'desc' ? -1 : 1;
+        }
     } else {
         // Default sort by createdAt descending (newest first)
         sortOptions.createdAt = -1;
@@ -365,6 +406,21 @@ const getTodoStatusHistory = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Get all unique tags for the user
+// @route   GET /api/todos/tags
+// @access  Private
+const getTodoTags = asyncHandler(async (req, res) => {
+    const tags = await Todo.aggregate([
+        { $match: { user: req.user._id } },
+        { $unwind: "$tags" },
+        { $group: { _id: "$tags" } },
+        { $sort: { _id: 1 } },
+        { $project: { _id: 0, tag: "$_id" } }
+    ]);
+
+    res.json({ tags: tags.map(item => item.tag) });
+});
+
 export {
     createTodo,
     getTodos,
@@ -374,5 +430,6 @@ export {
     updateTodoStatus,
     getTodoStats,
     getTodoSummary,
-    getTodoStatusHistory
+    getTodoStatusHistory,
+    getTodoTags
 };
