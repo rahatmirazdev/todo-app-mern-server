@@ -1,10 +1,10 @@
 import express from 'express';
-import { 
-    createTodo, 
-    getTodos, 
-    getTodoById, 
-    updateTodo, 
-    deleteTodo, 
+import {
+    createTodo,
+    getTodos,
+    getTodoById,
+    updateTodo,
+    deleteTodo,
     updateTodoStatus,
     getTodoStats,
     getTodoSummary
