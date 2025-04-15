@@ -274,10 +274,10 @@ const updateTodoStatus = asyncHandler(async (req, res) => {
 
             // Set completedAt timestamp when completing a todo
             let newRecurringTask = null;
-            
+
             if (status === 'completed' && todo.completedAt === null) {
                 todo.completedAt = new Date();
-                
+
                 // If this is a recurring task and it's being completed, generate the next instance
                 if (todo.isRecurring) {
                     newRecurringTask = await generateNextRecurringTask(todo);
@@ -287,7 +287,7 @@ const updateTodoStatus = asyncHandler(async (req, res) => {
             }
 
             const updatedTodo = await todo.save();
-            
+
             // If a new recurring task was created, include it in the response
             if (newRecurringTask) {
                 res.json({
@@ -311,7 +311,7 @@ const updateTodoStatus = asyncHandler(async (req, res) => {
 // @access  Private
 const getTodoStats = asyncHandler(async (req, res) => {
     const userId = req.user._id;
-    
+
     // Initialize the stats object
     const stats = {
         total: 0,
@@ -328,7 +328,7 @@ const getTodoStats = asyncHandler(async (req, res) => {
     // Process the status counts
     statusCounts.forEach(status => {
         stats.total += status.count;
-        
+
         if (status._id === 'completed') {
             stats.completed = status.count;
         } else {

@@ -63,7 +63,7 @@ const calculateNextDueDate = (currentDueDate, pattern) => {
     }
 
     const dueDate = new Date(currentDueDate);
-    
+
     switch (pattern) {
         case 'daily':
             dueDate.setDate(dueDate.getDate() + 1);
@@ -78,6 +78,6 @@ const calculateNextDueDate = (currentDueDate, pattern) => {
         default:
             dueDate.setDate(dueDate.getDate() + 1); // Default to daily
     }
-    
+
     return dueDate;
 };
