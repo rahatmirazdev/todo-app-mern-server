@@ -11,7 +11,8 @@ import {
     getTodoStatusHistory,
     getTodoTags,
     getRecurringSeries,
-    getAllTodos
+    getAllTodos,
+    importTodos
 } from '../controllers/todoController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -48,5 +49,9 @@ router.route('/:id/history')
 // Route for recurring task series
 router.route('/series/:recurringId').get(protect, getRecurringSeries);
 router.get('/series/:recurringId', protect, getRecurringSeries);
+
+// Add this route for importing tasks
+router.route('/import')
+    .post(protect, importTodos);
 
 export default router;

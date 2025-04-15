@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
 import generateToken from '../utils/generateToken.js';
+import UserPreferences from '../models/userPreferencesModel.js';  // Add this import
 
 // @desc    Register a new user
 // @route   POST /api/users
@@ -89,4 +90,72 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     }
 });
 
-export { registerUser, getUserProfile, updateUserProfile };
+// @desc    Get user preferences
+// @route   GET /api/users/preferences
+// @access  Private
+const getUserPreferences = asyncHandler(async (req, res) => {
+    // Find preferences or create default if none exists
+    let preferences = await UserPreferences.findOne({ user: req.user._id });
+
+    if (!preferences) {
+        // Create default preferences
+        preferences = await UserPreferences.create({
+            user: req.user._id
+            // Schema defaults will handle the rest
+        });
+    }
+
+    res.json(preferences);
+});
+
+// @desc    Update user preferences
+// @route   PUT /api/users/preferences
+// @access  Private
+const updateUserPreferences = asyncHandler(async (req, res) => {
+    let preferences = await UserPreferences.findOne({ user: req.user._id });
+
+    if (!preferences) {
+        // Create with provided values
+        preferences = await UserPreferences.create({
+            user: req.user._id,
+            ...req.body
+        });
+    } else {
+        // Update existing preferences
+        // Only update fields that were sent in the request
+        if (req.body.theme) preferences.theme = req.body.theme;
+
+        if (req.body.notifications) {
+            preferences.notifications = {
+                ...preferences.notifications,
+                ...req.body.notifications
+            };
+        }
+
+        if (req.body.taskDefaults) {
+            preferences.taskDefaults = {
+                ...preferences.taskDefaults,
+                ...req.body.taskDefaults
+            };
+        }
+
+        if (req.body.privacy) {
+            preferences.privacy = {
+                ...preferences.privacy,
+                ...req.body.privacy
+            };
+        }
+
+        await preferences.save();
+    }
+
+    res.json(preferences);
+});
+
+export {
+    registerUser,
+    getUserProfile,
+    updateUserProfile,
+    getUserPreferences,
+    updateUserPreferences
+};

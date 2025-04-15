@@ -485,6 +485,53 @@ const getRecurringSeries = asyncHandler(async (req, res) => {
     res.json(seriesTodos);
 });
 
+// @desc    Import todos from JSON
+// @route   POST /api/todos/import
+// @access  Private
+const importTodos = asyncHandler(async (req, res) => {
+    const { todos } = req.body;
+
+    if (!todos || !Array.isArray(todos)) {
+        res.status(400);
+        throw new Error('Invalid import data format');
+    }
+
+    // Process and save each todo
+    const importResults = [];
+
+    for (const todo of todos) {
+        try {
+            // Create a new todo based on the imported data
+            const newTodo = {
+                title: todo.title,
+                description: todo.description || '',
+                status: ['todo', 'in_progress', 'completed'].includes(todo.status) ? todo.status : 'todo',
+                priority: ['low', 'medium', 'high'].includes(todo.priority) ? todo.priority : 'medium',
+                category: todo.category || 'general',
+                tags: Array.isArray(todo.tags) ? todo.tags : [],
+                dueDate: todo.dueDate || null,
+                user: req.user._id, // Assign to current user
+                subtasks: Array.isArray(todo.subtasks) ? todo.subtasks.map(st => ({
+                    title: st.title,
+                    completed: st.completed || false,
+                    completedAt: st.completedAt || null
+                })) : []
+            };
+
+            // Save to database
+            await Todo.create(newTodo);
+            importResults.push({ title: todo.title, success: true });
+        } catch (error) {
+            importResults.push({ title: todo.title, success: false, error: error.message });
+        }
+    }
+
+    res.status(201).json({
+        message: `Successfully imported ${importResults.filter(r => r.success).length} of ${todos.length} tasks`,
+        results: importResults
+    });
+});
+
 export {
     createTodo,
     getTodos,
@@ -497,5 +544,6 @@ export {
     getTodoStatusHistory,
     getTodoTags,
     getRecurringSeries,
-    getAllTodos
+    getAllTodos,
+    importTodos
 };
