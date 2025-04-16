@@ -1,7 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import Todo from '../models/todoModel.js';
 import { generateNextRecurringTask } from '../utils/recurringTaskUtils.js';
-import { generateSubtaskSuggestions } from '../services/geminiService.js';
+import { generateSubtaskSuggestions, parseNaturalLanguageTask as parseTaskWithAI } from '../services/geminiService.js';
 
 // @desc    Create a new todo
 // @route   POST /api/todos
@@ -617,6 +617,37 @@ const suggestSubtasks = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Parse natural language task
+// @route   POST /api/todos/parse-natural-language
+// @access  Private
+const parseNaturalLanguageTask = asyncHandler(async (req, res) => {
+    const { text } = req.body;
+
+    if (!text) {
+        res.status(400);
+        throw new Error('Text input is required');
+    }
+
+    try {
+        // Use the imported function from geminiService (renamed to avoid circular reference)
+        const parsedTask = await parseTaskWithAI(text);
+
+        if (!parsedTask) {
+            res.status(400);
+            throw new Error('Failed to parse natural language input');
+        }
+
+        res.json({
+            success: true,
+            task: parsedTask
+        });
+    } catch (error) {
+        console.error('Error in natural language parsing:', error);
+        res.status(500);
+        throw new Error('Failed to parse natural language input');
+    }
+});
+
 export {
     createTodo,
     getTodos,
@@ -631,5 +662,6 @@ export {
     getRecurringSeries,
     getAllTodos,
     importTodos,
-    suggestSubtasks
+    suggestSubtasks,
+    parseNaturalLanguageTask
 };

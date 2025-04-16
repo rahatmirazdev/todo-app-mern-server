@@ -13,7 +13,8 @@ import {
     getRecurringSeries,
     getAllTodos,
     importTodos,
-    suggestSubtasks
+    suggestSubtasks,
+    parseNaturalLanguageTask
 } from '../controllers/todoController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -57,5 +58,8 @@ router.route('/import')
 
 // Route for suggesting subtasks with AI
 router.post('/suggest-subtasks', protect, suggestSubtasks);
+
+// Route for parsing natural language task descriptions
+router.post('/parse-natural-language', protect, parseNaturalLanguageTask);
 
 export default router;
