@@ -122,20 +122,21 @@ const updateUserPreferences = asyncHandler(async (req, res) => {
         });
     } else {
         // Update existing preferences
-        // Only update fields that were sent in the request
+        // Only update task defaults if provided
+        if (req.body.taskDefaults) {
+            preferences.taskDefaults = {
+                ...preferences.taskDefaults,
+                ...req.body.taskDefaults
+            };
+        }
+
+        // Update other preference sections similarly if they're provided
         if (req.body.theme) preferences.theme = req.body.theme;
 
         if (req.body.notifications) {
             preferences.notifications = {
                 ...preferences.notifications,
                 ...req.body.notifications
-            };
-        }
-
-        if (req.body.taskDefaults) {
-            preferences.taskDefaults = {
-                ...preferences.taskDefaults,
-                ...req.body.taskDefaults
             };
         }
 
