@@ -63,79 +63,138 @@ const getTodos = asyncHandler(async (req, res) => {
         hasSubtasks,
         completedSubtasks,
         secondarySortBy,
-        secondaryOrder
+        secondaryOrder,
+        scheduledFrom,
+        scheduledTo,
+        $or
     } = req.query;
 
     // Build query
-    const query = { user: req.user._id };
+    let query = { user: req.user._id };
 
-    // Add filters if they exist
-    if (status) query.status = status;
-    if (priority) query.priority = priority;
-    if (category) query.category = category;
-
-    // Tag filtering
-    if (tags) {
-        // Handle both single tag and array of tags
-        if (Array.isArray(tags)) {
-            query.tags = { $in: tags };
-        } else {
-            query.tags = tags;
+    // Handle $or operator for combined queries
+    if ($or) {
+        try {
+            const orConditions = JSON.parse($or);
+            query.$or = orConditions;
+            console.log('Using $or query:', JSON.stringify(query.$or));
+        } catch (err) {
+            console.error('Error parsing $or condition:', err);
         }
-    }
-
-    // Subtask filtering
-    if (hasSubtasks === 'true') {
-        query['subtasks.0'] = { $exists: true };
-    } else if (hasSubtasks === 'false') {
-        query.subtasks = { $size: 0 };
-    }
-
-    // Subtask completion filtering (only applicable if hasSubtasks is true)
-    if (hasSubtasks === 'true' && completedSubtasks) {
-        if (completedSubtasks === 'all') {
-            query.$expr = { $eq: [{ $size: "$subtasks" }, { $size: { $filter: { input: "$subtasks", as: "subtask", cond: { $eq: ["$$subtask.completed", true] } } } }] };
-        } else if (completedSubtasks === 'none') {
-            query.$expr = { $eq: [{ $size: { $filter: { input: "$subtasks", as: "subtask", cond: { $eq: ["$$subtask.completed", true] } } } }, 0] };
-        } else if (completedSubtasks === 'some') {
-            query.$and = [
-                { $expr: { $gt: [{ $size: { $filter: { input: "$subtasks", as: "subtask", cond: { $eq: ["$$subtask.completed", true] } } } }, 0] } },
-                { $expr: { $lt: [{ $size: { $filter: { input: "$subtasks", as: "subtask", cond: { $eq: ["$$subtask.completed", true] } } } }, { $size: "$subtasks" }] } }
-            ];
-        }
-    }
-
-    // Due date filtering
-    if (dueDateFrom === 'none') {
-        // No due date set
-        query.dueDate = null;
-    } else if (dueDateFrom || dueDateTo) {
-        query.dueDate = {};
-
-        if (dueDateFrom) {
-            const fromDate = new Date(dueDateFrom);
-            fromDate.setHours(0, 0, 0, 0);
-            query.dueDate.$gte = fromDate;
+    } else {
+        // Add filters if they exist
+        if (status) {
+            if (status.includes(',')) {
+                // Handle multiple statuses
+                query.status = { $in: status.split(',') };
+            } else {
+                query.status = status;
+            }
         }
 
-        if (dueDateTo) {
-            const toDate = new Date(dueDateTo);
-            toDate.setHours(23, 59, 59, 999);
-            query.dueDate.$lte = toDate;
+        // Add other existing filters
+        if (priority) query.priority = priority;
+        if (category) query.category = category;
+
+        // Tag filtering
+        if (tags) {
+            // Handle both single tag and array of tags
+            if (Array.isArray(tags)) {
+                query.tags = { $in: tags };
+            } else {
+                query.tags = tags;
+            }
+        }
+
+        // Subtask filtering
+        if (hasSubtasks === 'true') {
+            query['subtasks.0'] = { $exists: true };
+        } else if (hasSubtasks === 'false') {
+            query.subtasks = { $size: 0 };
+        }
+
+        // Subtask completion filtering (only applicable if hasSubtasks is true)
+        if (hasSubtasks === 'true' && completedSubtasks) {
+            if (completedSubtasks === 'all') {
+                query.$expr = { $eq: [{ $size: "$subtasks" }, { $size: { $filter: { input: "$subtasks", as: "subtask", cond: { $eq: ["$$subtask.completed", true] } } } }] };
+            } else if (completedSubtasks === 'none') {
+                query.$expr = { $eq: [{ $size: { $filter: { input: "$subtasks", as: "subtask", cond: { $eq: ["$$subtask.completed", true] } } } }, 0] };
+            } else if (completedSubtasks === 'some') {
+                query.$and = [
+                    { $expr: { $gt: [{ $size: { $filter: { input: "$subtasks", as: "subtask", cond: { $eq: ["$$subtask.completed", true] } } } }, 0] } },
+                    { $expr: { $lt: [{ $size: { $filter: { input: "$subtasks", as: "subtask", cond: { $eq: ["$$subtask.completed", true] } } } }, { $size: "$subtasks" }] } }
+                ];
+            }
+        }
+
+        // Due date filtering
+        if (dueDateFrom === 'none') {
+            // No due date set
+            query.dueDate = null;
+        } else if (dueDateFrom || dueDateTo) {
+            query.dueDate = {};
+
+            if (dueDateFrom) {
+                const fromDate = new Date(dueDateFrom);
+                fromDate.setHours(0, 0, 0, 0);
+                query.dueDate.$gte = fromDate;
+            }
+
+            if (dueDateTo) {
+                const toDate = new Date(dueDateTo);
+                toDate.setHours(23, 59, 59, 999);
+                query.dueDate.$lte = toDate;
+            }
+        }
+
+        // Scheduled time filtering
+        if (scheduledFrom || scheduledTo) {
+            query.scheduledTime = {};
+
+            if (scheduledFrom) {
+                console.log('Filter scheduledFrom:', scheduledFrom);
+                query.scheduledTime.$gte = new Date(scheduledFrom);
+            }
+
+            if (scheduledTo) {
+                console.log('Filter scheduledTo:', scheduledTo);
+                query.scheduledTime.$lt = new Date(scheduledTo);
+            }
+
+            console.log('Final scheduled time filter:', JSON.stringify(query.scheduledTime));
         }
     }
 
     // Search functionality
     if (search) {
         const searchRegex = { $regex: search, $options: 'i' };
-        query.$or = [
-            { title: searchRegex },
-            { description: searchRegex },
-            { category: searchRegex },
-            { tags: searchRegex },
-            // Also search in subtasks titles
-            { 'subtasks.title': searchRegex }
-        ];
+
+        // If we already have an $or condition, we need to use $and to combine with search
+        if (query.$or) {
+            query.$and = [
+                { $or: query.$or },
+                {
+                    $or: [
+                        { title: searchRegex },
+                        { description: searchRegex },
+                        { category: searchRegex },
+                        { tags: searchRegex },
+                        { 'subtasks.title': searchRegex }
+                    ]
+                }
+            ];
+
+            // Delete the original $or as we've moved it to $and
+            delete query.$or;
+        } else {
+            query.$or = [
+                { title: searchRegex },
+                { description: searchRegex },
+                { category: searchRegex },
+                { tags: searchRegex },
+                { 'subtasks.title': searchRegex }
+            ];
+        }
     }
 
     // Calculate pagination
@@ -155,6 +214,8 @@ const getTodos = asyncHandler(async (req, res) => {
         sortOptions.createdAt = -1;
     }
 
+    console.log('Final query:', JSON.stringify(query));
+
     // Execute query with pagination and sorting
     const todos = await Todo.find(query)
         .sort(sortOptions)
@@ -163,6 +224,8 @@ const getTodos = asyncHandler(async (req, res) => {
 
     // Get total count for pagination
     const total = await Todo.countDocuments(query);
+
+    console.log(`Found ${todos.length} todos matching query`);
 
     res.json({
         todos,
