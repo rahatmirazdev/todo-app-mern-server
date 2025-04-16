@@ -100,6 +100,33 @@ const todoSchema = mongoose.Schema(
             type: Date,
             default: null
         },
+        // Add duration estimate and scheduling fields
+        estimatedDuration: {
+            type: Number, // In minutes
+            default: 30
+        },
+        optimalTimeOfDay: {
+            type: String,
+            enum: ['morning', 'afternoon', 'evening', 'any'],
+            default: 'any'
+        },
+        scheduledTime: {
+            type: Date,
+            default: null
+        },
+        actualDuration: {
+            type: Number, // In minutes
+            default: null
+        },
+        startedAt: {
+            type: Date,
+            default: null
+        },
+        // Track task type for better recommendations
+        taskType: {
+            type: String,
+            default: 'general'
+        },
         dependencies: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Todo'

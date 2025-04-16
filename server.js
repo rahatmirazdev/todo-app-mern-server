@@ -9,6 +9,7 @@ import connectDB from './config/db.js';
 import userRoutes from './routes/userRoutes.js';
 import todoRoutes from './routes/todoRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import schedulerRoutes from './routes/schedulerRoutes.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 
 dotenv.config();
@@ -44,6 +45,7 @@ if (!fs.existsSync(publicDir)) {
 app.use('/api/users', userRoutes);
 app.use('/api/todos', todoRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/scheduler', schedulerRoutes);
 
 // Base route
 app.get('/', (req, res) => {
