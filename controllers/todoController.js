@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import Todo from '../models/todoModel.js';
 import { generateNextRecurringTask } from '../utils/recurringTaskUtils.js';
+import { generateSubtaskSuggestions } from '../services/geminiService.js';
 
 // @desc    Create a new todo
 // @route   POST /api/todos
@@ -532,6 +533,27 @@ const importTodos = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Generate subtask suggestions using AI
+// @route   POST /api/todos/suggest-subtasks
+// @access  Private
+const suggestSubtasks = asyncHandler(async (req, res) => {
+    const { description, title } = req.body;
+
+    if (!description) {
+        res.status(400);
+        throw new Error('Task description is required');
+    }
+
+    try {
+        const suggestions = await generateSubtaskSuggestions(description, title || '');
+        res.json({ suggestions });
+    } catch (error) {
+        console.error('Error suggesting subtasks:', error);
+        res.status(500);
+        throw new Error('Failed to generate subtask suggestions');
+    }
+});
+
 export {
     createTodo,
     getTodos,
@@ -545,5 +567,6 @@ export {
     getTodoTags,
     getRecurringSeries,
     getAllTodos,
-    importTodos
+    importTodos,
+    suggestSubtasks
 };

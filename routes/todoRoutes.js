@@ -12,7 +12,8 @@ import {
     getTodoTags,
     getRecurringSeries,
     getAllTodos,
-    importTodos
+    importTodos,
+    suggestSubtasks
 } from '../controllers/todoController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -53,5 +54,8 @@ router.get('/series/:recurringId', protect, getRecurringSeries);
 // Add this route for importing tasks
 router.route('/import')
     .post(protect, importTodos);
+
+// Route for suggesting subtasks with AI
+router.post('/suggest-subtasks', protect, suggestSubtasks);
 
 export default router;
