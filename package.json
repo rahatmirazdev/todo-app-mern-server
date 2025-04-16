@@ -30,6 +30,7 @@
         "jsonwebtoken": "^9.0.2",
         "mongoose": "^8.0.0",
         "morgan": "^1.10.0",
+        "node-notifier": "^10.0.1",
         "validator": "^13.11.0"
     },
     "devDependencies": {
