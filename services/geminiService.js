@@ -189,9 +189,7 @@ export const parseNaturalLanguageTask = async (taskDescription) => {
     } catch (error) {
         console.error("Error parsing natural language task:", error);
         // More detailed error information
-        if (error.response) {
-            console.error("Gemini API error:", error.response.data);
-        }
+        // console.error("Gemini API error:", error.response.data);
         return null;
     }
 };

@@ -28,7 +28,6 @@ class NotificationService {
                 },
                 (err, response) => {
                     if (err) {
-                        console.error('Error sending notification:', err);
                         reject(err);
                     } else {
                         resolve(response);
@@ -38,7 +37,6 @@ class NotificationService {
 
             // Handle notification click
             notifier.on('click', () => {
-                console.log('Notification clicked');
                 resolve({ clicked: true });
             });
         });
