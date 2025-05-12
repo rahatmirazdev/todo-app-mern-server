@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import connectDB from './config/db.js';
+import { corsMiddleware } from './middleware/corsMiddleware.js';
 
 // Import route files
 import userRoutes from './routes/userRoutes.js';
@@ -19,14 +20,9 @@ const app = express();
 connectDB();
 // https://taskiwala.netlify.app/
 // Middleware
-app.use(cors({
-    origin: process.env.NODE_ENV === 'production'
-        ? ['https://taskiwala.netlify.app', 'https://www.taskiwala.netlify.app', 'https://todo-app-mern-server-a9rx.onrender.com', 'https://taskistation.web.app']
-        : ['http://localhost:5173', 'http://localhost:5000'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Apply our custom CORS middleware first to handle all requests including preflight
+app.use(corsMiddleware);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());  // Add cookie parser
@@ -39,11 +35,6 @@ app.use('/api/todos', todoRoutes);  // Register todo routes
 
 // Base route
 app.get('/', (req, res) => {
-    // Set explicit CORS headers for the root path
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
     res.json({
         message: 'API is running...',
         environment: process.env.NODE_ENV || 'development',

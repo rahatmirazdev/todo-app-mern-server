@@ -5,6 +5,11 @@ import User from '../models/userModel.js';
 const protect = asyncHandler(async (req, res, next) => {
     let token;
 
+    // Handle preflight OPTIONS requests right away
+    if (req.method === 'OPTIONS') {
+        return next();
+    }
+
     if (
         req.headers.authorization &&
         req.headers.authorization.startsWith('Bearer')
