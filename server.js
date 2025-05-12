@@ -23,7 +23,7 @@ connectDB();
 // Middleware
 app.use(cors({
     origin: process.env.NODE_ENV === 'production'
-        ? ['https://taskiwala.netlify.app', 'https://www.taskiwala.netlify.app']
+        ? ['https://taskiwala.netlify.app', 'https://www.taskiwala.netlify.app', 'https://taskistation.web.app']
         : 'http://localhost:5173',
     credentials: true
 }));
