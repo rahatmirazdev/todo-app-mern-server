@@ -17,11 +17,11 @@ const app = express();
 
 // Connect to MongoDB
 connectDB();
-// https://taskify.firebaseapp.com/
+// https://taskiwala.netlify.app/
 // Middleware
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-        ? ['https://taskify.firebaseapp.com', 'https://www.taskify.firebaseapp.com'] 
+    origin: process.env.NODE_ENV === 'production'
+        ? ['https://taskiwala.netlify.app', 'https://www.taskiwala.netlify.app']
         : 'http://localhost:5173',
     credentials: true
 }));
