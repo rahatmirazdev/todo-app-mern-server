@@ -18,14 +18,19 @@ dotenv.config();
 const app = express();
 
 // Connect to MongoDB
-connectDB();
+const dbConnected = await connectDB();
+
+// Log if DB connection failed but continue running the API
+if (!dbConnected) {
+    console.error('WARNING: Server running without database connection!');
+}
 
 // Middleware
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production'
-        ? ['https://taskiwala.netlify.app', 'https://www.taskiwala.netlify.app', 'https://taskistation.web.app']
-        : 'http://localhost:5173',
-    credentials: true
+    origin: ['https://taskiwala.netlify.app', 'https://www.taskiwala.netlify.app', 'https://taskistation.web.app', 'http://localhost:5173'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -51,7 +56,17 @@ app.use('/api/scheduler', schedulerRoutes);
 
 // Base route
 app.get('/', (req, res) => {
-    res.json({ message: 'API is running...' });
+    // Set explicit CORS headers for the root path
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    res.json({
+        message: 'API is running...',
+        environment: process.env.NODE_ENV || 'development',
+        dbConnected: dbConnected,
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Error Handling middleware
