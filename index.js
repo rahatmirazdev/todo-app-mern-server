@@ -21,9 +21,11 @@ connectDB();
 // Middleware
 app.use(cors({
     origin: process.env.NODE_ENV === 'production'
-        ? ['https://taskiwala.netlify.app', 'https://www.taskiwala.netlify.app', 'https://todo-app-mern-server-a9rx.onrender.com']
+        ? ['https://taskiwala.netlify.app', 'https://www.taskiwala.netlify.app', 'https://todo-app-mern-server-a9rx.onrender.com', 'https://taskistation.web.app']
         : ['http://localhost:5173', 'http://localhost:5000'],
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -37,7 +39,16 @@ app.use('/api/todos', todoRoutes);  // Register todo routes
 
 // Base route
 app.get('/', (req, res) => {
-    res.json({ message: 'API is running...' });
+    // Set explicit CORS headers for the root path
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    res.json({
+        message: 'API is running...',
+        environment: process.env.NODE_ENV || 'development',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Error Handling middleware
