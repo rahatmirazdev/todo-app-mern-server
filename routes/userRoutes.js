@@ -10,6 +10,11 @@ import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+// Simple status endpoint for availability checks
+router.get('/status', (req, res) => {
+    res.json({ status: 'API is available' });
+});
+
 router.route('/').post(registerUser);
 router
     .route('/profile')

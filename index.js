@@ -21,8 +21,8 @@ connectDB();
 // Middleware
 app.use(cors({
     origin: process.env.NODE_ENV === 'production'
-        ? ['https://taskiwala.netlify.app', 'https://www.taskiwala.netlify.app']
-        : 'http://localhost:5173',
+        ? ['https://taskiwala.netlify.app', 'https://www.taskiwala.netlify.app', 'https://todo-app-mern-server-a9rx.onrender.com']
+        : ['http://localhost:5173', 'http://localhost:5000'],
     credentials: true
 }));
 app.use(express.json());
